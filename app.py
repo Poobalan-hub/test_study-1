@@ -830,9 +830,66 @@ def hospital_saku_decision(summary, depertment_assessement):
 
 
 def main():
-    st.title("問診AI")
+    # Add custom CSS
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebar"] {
+            background-color: #FFE6E6;
+        }
+        /* 終了ボタンのスタイル */
+        .stButton > button {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.2rem;
+            margin-top: 1rem;
+        }
+        /* 終了ボタンのスタイル */
+        .stButton > button[type="primary"] {
+            background-color: #f44336;
+            color: white;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    st.title("こんにちはAI")
     st.text("正確な問診をするAIです。")
-
+    
+    # Create columns for layout
+    col1, col2 = st.columns([0.8, 0.2])
+    
+    with col1:
+        # Add light pink background to the left column
+        st.markdown(
+            """
+            <style>
+            [data-testid="stVerticalBlock"] > [style*="flex-direction: column"] > [data-testid="stVerticalBlock"] {
+                background-color: #FFE6E6;
+                padding: 1rem;
+                border-radius: 10px;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+        
+    with col2:
+        # Add scrollable container to the right column
+        st.markdown(
+            """
+            <style>
+            [data-testid="stVerticalBlock"] > [style*="flex-direction: column"] > [data-testid="stVerticalBlock"] {
+                max-height: 80vh;
+                overflow-y: auto;
+                padding: 1rem;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+    
     # セッションで管理するステート
     if "step" not in st.session_state:
         st.session_state["step"] = 0  # 0から開始するように変更
