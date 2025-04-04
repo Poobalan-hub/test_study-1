@@ -826,6 +826,41 @@ def hospital_saku_decision(summary, depertment_assessement):
 '''
     return chat_with_model(prompt, model=st.session_state["selected_model"], temperature=0)
 
+def analyze_stomach_pain(patient_input):
+    """
+    Analyzes stomach pain characteristics and location from patient input
+    Returns a dictionary with pain details
+    """
+    prompt = f"""
+    You are a medical professional analyzing a patient's description of stomach pain.
+    Please analyze the following patient input and return a JSON dictionary with the following information:
+    - location: Where exactly is the pain located? (e.g., upper right, lower left, whole abdomen)
+    - type: What type of pain is it? (e.g., sharp, dull, cramping)
+    - severity: On a scale of 1-10, how severe is the pain?
+    - duration: How long has the pain been present?
+    - associated_symptoms: Any associated symptoms like nausea, vomiting, diarrhea?
+    
+    Patient input: {patient_input}
+    
+    Return only a JSON dictionary, no additional text.
+    Example format:
+    {{
+        "location": "upper right abdomen",
+        "type": "sharp",
+        "severity": 7,
+        "duration": "2 hours",
+        "associated_symptoms": ["nausea", "vomiting"]
+    }}
+    """
+    
+    try:
+        response = chat_with_model(prompt, model=st.session_state["selected_model"], temperature=0)
+        if response:
+            return json.loads(response)
+    except Exception as e:
+        st.error(f"Error analyzing stomach pain: {str(e)}")
+    return None
+
 ###メイン処理###
 
 
@@ -845,6 +880,8 @@ def main():
             "openai": "",
             "deepseek": ""
         }
+    if "stomach_pain_analysis" not in st.session_state:
+        st.session_state["stomach_pain_analysis"] = None
 
     # サイドバーにモデル設定を配置
     with st.sidebar:
@@ -960,6 +997,31 @@ def main():
             # step1: ユーザーの症状自由記載
             # ---------------------------------------------------
             st.session_state["patients_first_comment"] = user_input
+
+            # 腹痛の可能性がある場合、詳細分析を行う
+            if "腹痛" in user_input or "お腹が痛い" in user_input or "stomach pain" in user_input.lower():
+                with st.spinner("腹痛の詳細を分析中..."):
+                    pain_analysis = analyze_stomach_pain(user_input)
+                    if pain_analysis:
+                        st.session_state["stomach_pain_analysis"] = pain_analysis
+                        # 分析結果に基づいて追加の質問を生成
+                        additional_questions = []
+                        if pain_analysis["location"] == "不明":
+                            additional_questions.append("お腹のどの部分が痛みますか？")
+                        if pain_analysis["type"] == "不明":
+                            additional_questions.append("痛みの感じ方を教えてください。")
+                        if pain_analysis["severity"] < 0:
+                            additional_questions.append("痛みの強さを10段階で教えてください。")
+                        
+                        if additional_questions:
+                            for question in additional_questions:
+                                st.session_state["messages"].append({
+                                    "role": "assistant",
+                                    "content": question,
+                                    "typed": False
+                                })
+                    else:
+                        st.error("腹痛の分析に失敗しました。")
 
             # 即座に確認メッセージを表示
             assistant_text = (
