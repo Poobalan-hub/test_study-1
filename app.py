@@ -56,7 +56,7 @@ next_question_map = {
             "胸のどのあたりが痛みますか？（みぞおち、真ん中、左、右など）",
             "どのような痛みでしょうか？（締め付けられるような痛み、刺すような痛み、焼けるような痛みなど）",
             "いつからこのような痛みを自覚していますか(10分前ですか？3日前ですか？)",
-            "人生最大の痛みを10点とした場合、何点くらいですか？",
+            "人生最大の痛みを10点とすると、今の痛みは何点くらいですか？",
             "痛いところを手で押すと痛みは強くなりますか？それともほとんど変わらないですか？",
             "痛みの範囲は10円玉程度ですか、それとも手のひら大程度ですか？",
             "痛みは階段を登る時と、座っている時とでどのタイミングで強くなりますか？",
@@ -702,6 +702,7 @@ def create_case_dict(patients_comment, next_question):
         if str_response is None:
             st.error("質問への回答の分析に失敗しました。APIキーを確認してください。")
             return None
+        
         case_dict[next_question[i]] = str_response
     return case_dict
 
@@ -792,7 +793,7 @@ def hospital_watanabe_decision(summary, depertment_assessement):
     患者サマリ: {summary}
     受診推奨科に関するアセスメント: {depertment_assessement}
     受け入れ可能基準: 肺炎など内科系疾患の場合は受け入れ困難。ただし、血圧低下やショック、手術が必要になる可能性がある腹痛などの患者は受け入れが困難。
-    回答例: 渡辺病院ですが、手術が不要な可能性が高い内科系疾患は全般的な受け入れが可能で、相談された患者さんの受け入れは可能と思われます。
+    回答例: 渡辺病院ですが、手術が不要な可能性が高い内科系疾患は全般的に受け入れが可能で、相談された患者さんの受け入れは可能と思われます。
 '''
     return chat_with_model(prompt, model=st.session_state["selected_model"], temperature=0)
 
@@ -828,6 +829,55 @@ def hospital_saku_decision(summary, depertment_assessement):
 
 ###メイン処理###
 
+import streamlit as st
+from deepseek_api import DeepSeekAPI
+
+# ページ設定
+st.set_page_config(
+    page_title="DeepSeek Chat",
+    page_icon="🤖",
+    layout="wide"
+)
+
+# APIキーの設定
+API_KEY = "sk-fb5ed929cd134354b20d4557c194e651"
+
+# DeepSeek APIクライアントの初期化
+client = DeepSeekAPI(API_KEY)
+
+# タイトル
+st.title("DeepSeek Chat")
+st.markdown("---")
+
+# チャット履歴の初期化
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {"role": "system", "content": "You are a helpful assistant."}
+    ]
+
+# チャット履歴の表示
+for message in st.session_state.messages:
+    if message["role"] != "system":
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
+
+# ユーザー入力
+if prompt := st.chat_input("メッセージを入力してください"):
+    # ユーザーメッセージの表示
+    with st.chat_message("user"):
+        st.write(prompt)
+    
+    # メッセージの追加
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    
+    # AIの応答を生成
+    with st.chat_message("assistant"):
+        with st.spinner("考え中..."):
+            response = client.chat_completion(st.session_state.messages)
+            if response and "choices" in response:
+                ai_message = response["choices"][0]["message"]["content"]
+                st.write(ai_message)
+                st.session_state.messages.append({"role": "assistant", "content": ai_message})
 
 def main():
     st.title("問診AI")
