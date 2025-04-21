@@ -1246,10 +1246,19 @@ def main():
                     unanswered = [q for q, a in case_dict.items() if a == "0"]
                     if not unanswered:
                         # 全部回答済みならstep4へ
-                        done_text = "ご回答ありがとうございます。\n回答内容をまとめますのでお待ちください。"
                         st.session_state["messages"].append({
                             "role": "assistant",
-                            "content": done_text,
+                            "content": "ご回答ありがとうございました。",
+                            "typed": False
+                        })
+                        st.session_state["messages"].append({
+                            "role": "assistant",
+                            "content": "メッセージで、問診、終了。",
+                            "typed": False
+                        })
+                        st.session_state["messages"].append({
+                            "role": "assistant",
+                            "content": "問診表をダウンロード",
                             "typed": False
                         })
                         st.session_state.step = 4
@@ -1301,10 +1310,19 @@ def main():
                     unanswered = [q for q, a in case_dict.items() if a == "0"]
                     if not unanswered:
                         # 全部回答済みならstep4へ
-                        done_text = "ご回答ありがとうございます。\n回答内容をまとめますのでお待ちください。"
                         st.session_state["messages"].append({
                             "role": "assistant",
-                            "content": done_text,
+                            "content": "ご回答ありがとうございました。",
+                            "typed": False
+                        })
+                        st.session_state["messages"].append({
+                            "role": "assistant",
+                            "content": "メッセージで、問診、終了。",
+                            "typed": False
+                        })
+                        st.session_state["messages"].append({
+                            "role": "assistant",
+                            "content": "問診表をダウンロード",
                             "typed": False
                         })
                         st.session_state.step = 4
@@ -1417,6 +1435,32 @@ def main():
         elif st.session_state.step == 1000:
             pass
 
+# --- Download QnA as CSV ---
+    if st.session_state.get("step") == 4:
+        # Collect QnA pairs from messages
+        qna_pairs = []
+        for i in range(len(st.session_state["messages"])):
+            msg = st.session_state["messages"][i]
+            if msg["role"] == "assistant":
+                # Look ahead for next user message
+                if i+1 < len(st.session_state["messages"]) and st.session_state["messages"][i+1]["role"] == "user":
+                    q = msg["content"].replace('\n', ' ')
+                    a = st.session_state["messages"][i+1]["content"].replace('\n', ' ')
+                    qna_pairs.append((q, a))
+        import io
+        import csv
+        csv_buffer = io.StringIO()
+        writer = csv.writer(csv_buffer)
+        writer.writerow(["Question", "Answer"])
+        for q, a in qna_pairs:
+            writer.writerow([q, a])
+        csv_data = csv_buffer.getvalue()
+        st.download_button(
+            label="データベースをダウンロード",
+            data=csv_data,
+            file_name="qna.csv",
+            mime="text/csv"
+        )
 
 if __name__ == "__main__":
     main()
