@@ -53,3 +53,5 @@ git config --global user.email "<XXX@gmail.com>"
 ## データ形式
 
 ## 制限事項
+
+Sponsors Sponsorship provided by the LLMATCH program of the Matsuo Laboratory LLM Community. https://linktr.ee/matsuolab_community
