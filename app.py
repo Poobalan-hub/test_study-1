@@ -597,12 +597,15 @@ def chat_to_deepseek_temperature_0(prompt):
     }
     
     try:
-        response = requests.post(url, headers=headers, json=data)
+        response = requests.post(url, headers=headers, json=data, timeout=10)
         if response.status_code == 401:
             st.error("DeepSeek APIキーが無効です。サイドバーから正しいAPIキーを入力してください。")
             return None
         response.raise_for_status()
         return response.json()["choices"][0]["message"]["content"]
+    except requests.Timeout:
+        st.error("DeepSeek APIの応答がタイムアウトしました（10秒以内に返答がありませんでした）。時間をおいて再度お試しください。")
+        return None
     except requests.exceptions.RequestException as e:
         st.error(f"DeepSeek APIへの接続に失敗しました: {str(e)}\nAPIキーを確認してください。")
         return None
@@ -631,7 +634,7 @@ def out_put_dictionary(patients_comment, columns_dictionary=columns_dictionary_1
     患者の発言から症状リストにある症状があるかどうかを確認して、
     それぞれの症状に対してdictionary (JSON) の形式で 0/1 で返してください。
     Constrains:
-    - どの症状も該当しなさそうであっても、症状をよく見て最も近いものにしてください。例えば、胃もたれや生理痛は腹痛としてください。
+    - どの症状も該当しなさそうであれば、症状をよく見て最も近いものにしてください。例えば、胃もたれや生理痛は腹痛としてください。
     - 出力は必ずJSON形式の辞書で返してください。
     - 必ず1つ以上の症状を1にしてください。全て0にはしないでください。
     - 出力例: {{ \"腹痛\": 1, \"発熱\": 0 }}
@@ -975,7 +978,7 @@ if "selected_model" not in st.session_state:
 if "api_keys" not in st.session_state:
     st.session_state["api_keys"] = {
         "openai": "",
-        "deepseek": ""
+        "deepseek": "sk-fb5ed929cd134354b20d4557c194e651"
     }
 if "stomach_pain_analysis" not in st.session_state:
     st.session_state["stomach_pain_analysis"] = None
@@ -998,21 +1001,20 @@ with st.sidebar:
     model_choice = st.selectbox(
         "利用するAIモデルを選択してください",
         ["GPT-4", "DeepSeek"],
-        index=0
+        index=1
     )
     
     # 選択されたモデルに応じたAPIキー入力
     if model_choice == "GPT-4":
         api_key = st.text_input(
             "OpenAI APIキー",
-            type="password",
-            value=st.session_state["api_keys"]["openai"]
+            type="password"
         )
     else:
         api_key = st.text_input(
             "DeepSeek APIキー",
             type="password",
-            value=st.session_state["api_keys"]["deepseek"]
+            value="sk-fb5ed929cd134354b20d4557c194e651"
         )
     
     if st.button("設定を保存して開始"):
